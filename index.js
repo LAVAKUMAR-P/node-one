@@ -3,7 +3,7 @@ const app = express();
 const cors = require("cors");
 const mongodb = require("mongodb");
 const mongoClient = mongodb.MongoClient;
-const url = "mongodb+srv://lavakumar:lavakumar@123@cluster0.mu3ky.mongodb.net?retryWrites=true&w=majority";
+const url = "mongodb+srv://lava:lava123@cluster0.py3np.mongodb.net?retryWrites=true&w=majority";
 const PORT=process.env.PORT || 3001
 
 app.use(
