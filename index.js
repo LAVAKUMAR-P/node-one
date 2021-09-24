@@ -4,9 +4,12 @@ const cors = require("cors");
 const mongodb = require("mongodb");
 const mongoClient = mongodb.MongoClient;
 const bcryptjs = require('bcrypt');
-const url = "mongodb://localhost:27017";
+const jwt = require("jsonwebtoken");
+const dotenv = require("dotenv");
+dotenv.config();
+const url = process.env.DB;
 //"mongodb+srv://lava:lava123@cluster0.py3np.mongodb.net?retryWrites=true&w=majority";
-const PORT=process.env.PORT || 3001
+const PORT= process.env.PORT || 3001
 
 
 app.use(
@@ -66,11 +69,16 @@ app.post("/login", async function (req, res) {
           console.log(req.body)
           console.log(user.password)
           let matchPassword = bcryptjs.compareSync(req.body.password, user.password)
-         if(matchPassword){
-          res.json({
-            message: "true"
-        })
-         }
+
+
+          if (matchPassword) {
+            // Generate JWT token
+            let token = jwt.sign({ id: user._id },process.env.JWT_SECRET)
+            res.json({
+                message: true,
+                token
+            })
+        }
       } else {
           res.status(404).json({
               message: "Username/Password is incorrect"
@@ -86,7 +94,40 @@ app.post("/login", async function (req, res) {
   }
 })
 
-app.get("/list-all-to-do", async function (req, res) {
+//authondication
+function authenticate(req, res, next) {
+  try {
+  // Check if the token is present
+  // if present -> check if it is valid
+  if(req.headers.authorization){
+      jwt.verify(req.headers.authorization,process.env.JWT_SECRET,function(error,decoded){
+          if(error){
+              res.status(500).json({
+                  message: "Unauthorized"
+              })
+          }else{
+              console.log(decoded)
+              req.userid = decoded.id;
+          next()
+          }
+          
+      });
+    
+  }else{
+      res.status(401).json({
+          message: "No Token Present"
+      })
+  }
+  } catch (error) {
+      console.log(error)
+      res.status(500).json({
+          message: "Internal Server Error"
+      })
+  }
+  
+}
+
+app.get("/list-all-todo",[authenticate], async function (req, res) {
   try {
     //conect the database
     let client = await mongoClient.connect(url);
@@ -95,7 +136,7 @@ app.get("/list-all-to-do", async function (req, res) {
     let db = client.db("todo_app");
 
     //select connect action and perform action
-    let data = await db.collection("task").find({}).toArray();
+    let data = await db.collection("task").find({userid : req.userid}).toArray();
 
     //close the connection
     client.close();
@@ -110,7 +151,7 @@ app.get("/list-all-to-do", async function (req, res) {
 });
 
 
-app.post("/create-task", async function (req, res) {
+app.post("/create-task",[authenticate], async function (req, res) {
   try {
     // connect the database
 
@@ -120,6 +161,8 @@ app.post("/create-task", async function (req, res) {
     let db = client.db("todo_app");
 
     //select the collection and perform the action
+    req.body.userid = req.userid;
+    console.log(req.body)
     let data = await db.collection("task").insertOne(req.body);
 
     //close the connection
@@ -136,7 +179,7 @@ app.post("/create-task", async function (req, res) {
   }
 });
 
-app.put("/update-task/:id",async function (req, res) {
+app.put("/update-task/:id",[authenticate],async function (req, res) {
   try {
     // connect the database
 
@@ -162,7 +205,7 @@ app.put("/update-task/:id",async function (req, res) {
   }
 });
 
-app.delete("/delete-task/:id", async function (req, res) {
+app.delete("/delete-task/:id",[authenticate], async function (req, res) {
   try {
     // connect the database
 
@@ -188,6 +231,12 @@ app.delete("/delete-task/:id", async function (req, res) {
   }
 });
 
+app.get("/dashboard", [authenticate], async (req, res) => {
+  res.json({
+      message: "Protected Data"
+  })
+})
+
 app.listen(PORT, function () {
-  console.log("Server is Listening");
+  console.log(`Server is Listening ${PORT}`);
 });
