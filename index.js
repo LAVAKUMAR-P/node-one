@@ -108,7 +108,7 @@ function authenticate(req, res, next) {
           }else{
               console.log(decoded)
               req.userid = decoded.id;
-          next()
+              next()
           }
           
       });
@@ -129,6 +129,7 @@ function authenticate(req, res, next) {
 
 app.get("/list-all-todo",[authenticate], async function (req, res) {
   try {
+    console.log(req.body);
     //conect the database
     let client = await mongoClient.connect(url);
 
