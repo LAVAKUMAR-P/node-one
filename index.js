@@ -8,7 +8,7 @@ const jwt = require("jsonwebtoken");
 const dotenv = require("dotenv");
 dotenv.config();
 const url = process.env.DB;
-//"mongodb+srv://lava:lava123@cluster0.py3np.mongodb.net?retryWrites=true&w=majority";
+
 const PORT= process.env.PORT || 3001
 
 
